@@ -95,7 +95,7 @@ static void gpio_irq_handler(uint gpio, uint32_t events){
             break;
 
         case 22:
-
+            gpio_put(LED_GREEN, !gpio_get(LED_GREEN));
             break;
         
         default:
