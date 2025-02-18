@@ -42,6 +42,8 @@
         "stdlib.h": "c",
         "pio.h": "c",
         "bootrom.h": "c",
-        "i2c.h": "c"
+        "i2c.h": "c",
+        "stdio.h": "c",
+        "pwm.h": "c"
     }
 }
