@@ -45,7 +45,7 @@ pico_enable_stdio_uart(conversor_ad 0)
 pico_enable_stdio_usb(conversor_ad 0)
 
 # Add the standard library to the build
-target_link_libraries(conversor_ad pico_stdlib hardware_i2c hardware_adc)
+target_link_libraries(conversor_ad pico_stdlib hardware_i2c hardware_adc hardware_pwm)
 
 # Add the standard include files to the build
 target_include_directories(conversor_ad PRIVATE
