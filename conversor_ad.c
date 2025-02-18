@@ -2,6 +2,7 @@
 #include "pico/stdlib.h"
 #include "hardware/i2c.h"
 #include "hardware/adc.h"
+#include "hardware/pwm.h"
 #include "inc/ssd1306.h"
 
 // Definição de constantes
@@ -18,13 +19,16 @@
 #define endereco 0x3C
 
 uint32_t last_time;
+uint8_t tolerancia_ruido = 100; // Tolerância de ruído para os valores lidos do joystick
 
 ssd1306_t ssd;      // Inicializa a estrutura do display
 bool cor = true;
+volatile bool pwm_leds = true;
 
 // Protótipo das Funções
 void setup(void);
 static void gpio_irq_handler(uint gpio, uint32_t events);
+uint pwm_init_gpio(uint gpio, uint wrap);
 
 int main()
 {
@@ -37,17 +41,40 @@ int main()
     uint16_t adc_value_x;
     uint16_t adc_value_y;
 
+    uint pwm_wrap = 4096;  
+    uint pwm_red_slice = pwm_init_gpio(LED_RED, pwm_wrap);
+    uint pwm_blue_slice = pwm_init_gpio(LED_BLUE, pwm_wrap);
+
     // Intervalos ADC
     // X: 19-20 .. 2160 .. 4085
     // Y: 19-20 .. 1940 .. 4085
 
-    while(true) {
-
+    while(true) {    
         adc_select_input(1); // Seleciona o ADC para eixo X. O pino 26 como entrada analógica
         adc_value_x = adc_read();
         adc_select_input(0); // Seleciona o ADC para eixo Y. O pino 27 como entrada analógica
         adc_value_y = adc_read();
 
+        // A cada acionamento do botão A, alterna entre ON/OFF os LED PWM
+        if (pwm_leds)
+        {   
+            // Desliga o Led Vermelho quando o eixo x do joystick estiver centralizado
+            if (adc_value_x >= (2160 - tolerancia_ruido) && adc_value_x <= (2160 + tolerancia_ruido)) {
+                pwm_set_gpio_level(LED_RED, 0);
+            } else {
+                pwm_set_gpio_level(LED_RED, adc_value_x);
+            }
+
+            // Desliga o Led Azul quando o eixo y do joystick estiver centralizado
+            if (adc_value_y >= (1940 - tolerancia_ruido) && adc_value_y <= (1940 + tolerancia_ruido)) {
+                pwm_set_gpio_level(LED_BLUE, 0);
+            } else {
+                pwm_set_gpio_level(LED_BLUE, adc_value_y);
+            }
+        } else {
+            pwm_set_gpio_level(LED_RED, 0);
+            pwm_set_gpio_level(LED_BLUE, 0);
+        }
     }
 
     return 0;
@@ -90,11 +117,11 @@ static void gpio_irq_handler(uint gpio, uint32_t events){
         last_time = current_time;
 
         switch (gpio) {
-        case 5:
-
+        case A_BUTTON:
+            pwm_leds = !pwm_leds;
             break;
 
-        case 22:
+        case JOYSTICK_BUTTON:
             gpio_put(LED_GREEN, !gpio_get(LED_GREEN));
             break;
         
@@ -102,4 +129,14 @@ static void gpio_irq_handler(uint gpio, uint32_t events){
             break;
         }
     }
+}
+
+uint pwm_init_gpio(uint gpio, uint wrap) {
+    gpio_set_function(gpio, GPIO_FUNC_PWM);
+
+    uint slice_num = pwm_gpio_to_slice_num(gpio);
+    pwm_set_wrap(slice_num, wrap);
+    
+    pwm_set_enabled(slice_num, true);  
+    return slice_num;  
 }
