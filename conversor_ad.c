@@ -34,11 +34,20 @@ int main()
     gpio_set_irq_enabled_with_callback(A_BUTTON, GPIO_IRQ_EDGE_FALL, 1, & gpio_irq_handler);
     gpio_set_irq_enabled(JOYSTICK_BUTTON, GPIO_IRQ_EDGE_FALL, true);
 
+    uint16_t adc_value_x;
+    uint16_t adc_value_y;
+
+    // Intervalos ADC
+    // X: 19-20 .. 2160 .. 4085
+    // Y: 19-20 .. 1940 .. 4085
+
     while(true) {
-        gpio_put(LED_RED, true);
-        sleep_ms(1000);
-        gpio_put(LED_RED, false);
-        sleep_ms(1000);
+
+        adc_select_input(1); // Seleciona o ADC para eixo X. O pino 26 como entrada analógica
+        adc_value_x = adc_read();
+        adc_select_input(0); // Seleciona o ADC para eixo Y. O pino 27 como entrada analógica
+        adc_value_y = adc_read();
+
     }
 
     return 0;
